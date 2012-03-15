@@ -1,0 +1,22 @@
+#!/bin/bash
+
+# open irssi in a new window
+command="tmux"
+sock="-L irc"
+tmirc="$command $sock"
+prog="irssi"
+
+# check if appropriate call
+isIRCsess=$(tmux ls | awk '{print $1}' | grep $prog)
+if [[ "x$isIRCsess" == "x" ]] ; then
+  echo "*** $(basename $0): only for use inside the irc tmux session"
+  exit 1
+fi
+
+# just go ahead and make sure that we have our layout setup right
+# tmux setw  other-pane-width 25 > /dev/null
+# tmux select-layout main-vertical > /dev/null
+
+# now launch program
+cat ~/.irssi/nicklistfifo
+echo -e "${ERROR_RED}Please Respawn${NC}"

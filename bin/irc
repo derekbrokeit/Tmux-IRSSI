@@ -1,0 +1,79 @@
+#!/bin/bash
+
+#open bitlbee
+bitlbee -F &> /dev/null
+
+# open irssi in a new window
+command="tmux"
+sock="-L irc"
+tmirc="$command $sock"
+
+prog="irssi"
+fileConf="$HOME/.tmux.conf.irc"
+
+#cleaner function
+function tmclean(){
+  this_session=$(tmux display -p '#S')
+  # Kill defunct sessions first
+  old_sessions=$($tmirc ls 2>/dev/null | egrep "^[0-9]{14}" | cut -f 1 -d:)
+  for old_session_id in $old_sessions; do
+      echo "kill old tm-session: $old_session_id"
+      $tmirc kill-session -t $old_session_id
+  done
+}
+
+# list of base session should be 1
+tmux_nb=$($tmirc ls 2> /dev/null | grep "^$prog" | wc -l) 
+if [[ "$tmux_nb" == "0" ]] ; then
+  # base session does not exist
+  # launch it and start the program in the main window
+  $tmirc -f $fileConf new-session -d -s $prog  $prog 
+
+  # now open a nicklist pane
+  $tmirc splitw -h "nickpane"
+  $tmirc set remain-on-exit on > /dev/null
+
+  # open pane for resizing nicklist
+  # $tmirc splitw -t 1 -v -l 1 " resizeNickPane"
+
+  # make sure the irc window is selected
+  $tmirc select-window -t $prog:0
+
+fi
+
+# cleanup old sessions by disconnecting
+tmclean
+
+# get row and column sizes
+#set -- $(stty size) # $1 = rows $2 = columns
+
+# launch new session with timestamp
+session_id=`date +"%Y%m%d%H%M%S"`
+$tmirc new-session -d -t $prog -s $session_id #-x "$2" -y "$(($1 - 1))" # status line uses a row
+
+# Attach to the new session @window:0
+for pane in $($tmirc lsp | grep "(dead)" | awk '{print $1}' | cut -f 1 -d:); do
+  $tmirc respawn-pane -t $pane
+done
+
+$tmirc select-window -t  $session_id:0
+$tmirc select-pane -t 0
+
+# setup for xterm title sharing
+# if we are inside another tmux-session, fool the terminal
+# otherwise it should have no effect
+TEMP_TERM=$TERM
+TEMP_TERM_SUFFIX=${TERM#$(echo $TERM | cut -f 1 -d'-')}
+TERM="xterm${TEMP_TERM_SUFFIX}"
+# the following is for prompt on the cellphone
+if [[ $TERM = "xterm-color" ]] ; then
+   TERM=xterm-256color
+fi
+
+
+$tmirc attach-session -t $session_id \; source-file $fileConf \; select-layout main-vertical
+
+# When we detach from it, kill the session
+$tmirc kill-session -t $session_id 2> /dev/null
+
+TERM=$TEMP_TERM
