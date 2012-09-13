@@ -1,4 +1,5 @@
 #!/bin/bash
+# Copyright 2011 Derek Ashley Thomas <derekathomas@gmail.com>
 
 #open bitlbee
 bitlbee -F &> /dev/null

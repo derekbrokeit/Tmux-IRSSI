@@ -1,4 +1,5 @@
 #!/bin/bash
+# Copyright 2011 Derek Ashley Thomas <derekathomas@gmail.com>
 
 # open irssi in a new window
 command="tmux"
